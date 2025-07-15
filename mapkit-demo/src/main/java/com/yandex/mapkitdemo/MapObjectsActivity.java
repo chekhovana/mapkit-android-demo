@@ -1,5 +1,6 @@
 package com.yandex.mapkitdemo;
 
+import static com.google.android.gms.common.util.CollectionUtils.listOf;
 import static com.yandex.mapkitdemo.ConstantsUtils.ANIMATED_PLACEMARK_CENTER;
 import static com.yandex.mapkitdemo.ConstantsUtils.ANIMATED_RECTANGLE_CENTER;
 import static com.yandex.mapkitdemo.ConstantsUtils.CIRCLE_CENTER;
@@ -9,36 +10,49 @@ import static com.yandex.mapkitdemo.ConstantsUtils.POLYLINE_CENTER;
 import static com.yandex.mapkitdemo.ConstantsUtils.TRIANGLE_CENTER;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.yandex.mapkit.MapKitFactory;
 import com.yandex.mapkit.geometry.Circle;
 import com.yandex.mapkit.geometry.LinearRing;
 import com.yandex.mapkit.geometry.Point;
 import com.yandex.mapkit.geometry.Polygon;
 import com.yandex.mapkit.geometry.Polyline;
+import com.yandex.mapkit.geometry.PolylineBuilder;
 import com.yandex.mapkit.map.CameraPosition;
 import com.yandex.mapkit.map.CircleMapObject;
 import com.yandex.mapkit.map.IconStyle;
+import com.yandex.mapkit.map.LineStyle;
 import com.yandex.mapkit.map.MapObject;
 import com.yandex.mapkit.map.MapObjectCollection;
+import com.yandex.mapkit.map.MapObjectDragListener;
 import com.yandex.mapkit.map.MapObjectTapListener;
 import com.yandex.mapkit.map.PlacemarkAnimation;
 import com.yandex.mapkit.map.PlacemarkMapObject;
 import com.yandex.mapkit.map.PolygonMapObject;
 import com.yandex.mapkit.map.PolylineMapObject;
+import com.yandex.mapkit.map.RotationType;
 import com.yandex.mapkit.mapview.MapView;
 import com.yandex.runtime.image.AnimatedImageProvider;
 import com.yandex.runtime.image.ImageProvider;
 import com.yandex.runtime.ui_view.ViewProvider;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 
 /**
@@ -57,8 +71,7 @@ public class MapObjectsActivity extends Activity {
         setContentView(R.layout.map_objects);
         super.onCreate(savedInstanceState);
         mapView = findViewById(R.id.mapview);
-        mapView.getMapWindow().getMap().move(
-                new CameraPosition(DEFAULT_POINT, 15.0f, 0.0f, 0.0f));
+        mapView.getMapWindow().getMap().move(new CameraPosition(DEFAULT_POINT, 15.0f, 0.0f, 0.0f));
         mapObjects = mapView.getMapWindow().getMap().getMapObjects().addCollection();
         animationHandler = new Handler(Looper.myLooper());
         createMapObjects();
@@ -79,7 +92,9 @@ public class MapObjectsActivity extends Activity {
     }
 
     private void createMapObjects() {
-        AnimatedImageProvider animatedImage = AnimatedImageProvider.fromAsset(this, "animation.png");
+/*
+        AnimatedImageProvider animatedImage = AnimatedImageProvider.fromAsset(this, "animation
+        .png");
         ArrayList<Point> rectPoints = new ArrayList<>();
         rectPoints.add(new Point(
                 ANIMATED_RECTANGLE_CENTER.getLatitude() - OBJECT_SIZE,
@@ -117,30 +132,83 @@ public class MapObjectsActivity extends Activity {
         triangle.setZIndex(100.0f);
 
         createTappableCircle();
+ */
+//        createPlacemarkMapObjectWithViewProvider();
+//        createAnimatedPlacemark();
+//        createPlacemark();
+        createPolyline();
+    }
 
-        ArrayList<Point> polylinePoints = new ArrayList<>();
-        polylinePoints.add(new Point(
-                POLYLINE_CENTER.getLatitude() + OBJECT_SIZE,
-                POLYLINE_CENTER.getLongitude()- OBJECT_SIZE));
-        polylinePoints.add(new Point(
-                POLYLINE_CENTER.getLatitude() - OBJECT_SIZE,
-                POLYLINE_CENTER.getLongitude()- OBJECT_SIZE));
-        polylinePoints.add(new Point(
-                POLYLINE_CENTER.getLatitude(),
-                POLYLINE_CENTER.getLongitude() + OBJECT_SIZE));
-
-        PolylineMapObject polyline = mapObjects.addPolyline(new Polyline(polylinePoints));
-        polyline.setStrokeColor(Color.BLACK);
-        polyline.setZIndex(100.0f);
-
+    private void createPlacemark() {
         PlacemarkMapObject mark = mapObjects.addPlacemark();
         mark.setGeometry(DRAGGABLE_PLACEMARK_CENTER);
-        mark.setOpacity(0.5f);
+//        mark.setOpacity(0.1f);
         mark.setIcon(ImageProvider.fromResource(this, R.drawable.mark));
         mark.setDraggable(true);
+        mark.setZIndex(2);
+        Glide.with(this)
+                .asBitmap()
+                .load("https://www.iconarchive.com/download/i103472/paomedia/small-n-flat/sign-delete.48.png")
+                .into(new CustomTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(@NonNull Bitmap resource, Transition<? super Bitmap> transition) {
+                        ImageProvider imageProvider = ImageProvider.fromBitmap(resource);
+                        PlacemarkMapObject placemark = mapObjects.addPlacemark(DRAGGABLE_PLACEMARK_CENTER, imageProvider);
+                        // Optionally customize the placemark here
+                        placemark.setOpacity(1.0f);
+                        placemark.setZIndex(1);
+                        var is = new IconStyle();
+                        is.setScale(10.0f);
+                        is.setRotationType(RotationType.ROTATE);
+                        placemark.setIconStyle(is);
+                        placemark.setDirection(90);
+//                        placemark.setScaleFunction();
+                    }
+//
+                    @Override
+                    public void onLoadCleared(android.graphics.drawable.Drawable placeholder) {
+                        // Handle if needed
+                    }
+                });
+    }
 
-        createPlacemarkMapObjectWithViewProvider();
-        createAnimatedPlacemark();
+    private void createPolyline() {
+        var delta = OBJECT_SIZE * 2;
+        var center = new Point(DEFAULT_POINT.getLatitude() + 2 * delta, DEFAULT_POINT.getLongitude());
+        ArrayList<Point> polylinePoints = new ArrayList<>();
+        polylinePoints.add(new Point(center.getLatitude() + 1 * delta, center.getLongitude() - 2 * delta));
+        polylinePoints.add(new Point(center.getLatitude() + 1 * delta, center.getLongitude() + 2 * delta));
+        polylinePoints.add(new Point(center.getLatitude() - 0 * delta, center.getLongitude() - 2 * delta));
+        polylinePoints.add(new Point(center.getLatitude() - 0 * delta, center.getLongitude() + 2 * delta));
+        PolylineMapObject polyline = mapObjects.addPolyline(new Polyline(polylinePoints));
+        polyline.setStrokeColor(Color.YELLOW);
+        var ls = new LineStyle();
+        ls.setStrokeWidth(20);
+        ls.setOutlineWidth(10);
+        ls.setInnerOutlineEnabled(true);
+        ls.setOutlineColor(Color.GREEN);
+        ls.setArcApproximationStep(1);
+        ls.setTurnRadius(00);
+//        ls.setDashLength(50);
+//        ls.setGapLength(20);
+//        ls.setDashOffset(300);
+        polyline.setStyle(ls);
+
+    }
+
+    private void createPolygon() {
+        var points = new ArrayList<Point>();
+        var delta = OBJECT_SIZE * 2;
+        var center = new Point(DEFAULT_POINT.getLatitude() - 0 * delta, DEFAULT_POINT.getLongitude());
+        points.add(new Point(center.getLatitude() + 0 * delta, center.getLongitude() - 2 * delta));
+        points.add(new Point(center.getLatitude() + 0 * delta, center.getLongitude() + 2 * delta));
+        points.add(new Point(center.getLatitude() - 0.5 * delta, center.getLongitude() + 2 * delta));
+        points.add(new Point(center.getLatitude() - 0.5 * delta, center.getLongitude() - 2 * delta));
+        var polygon = mapObjects.addPolygon(new Polygon(new LinearRing(points), Collections.emptyList()));
+        polygon.setStrokeColor(Color.GREEN);
+        polygon.setFillColor(Color.YELLOW);
+        polygon.setStrokeWidth(10);
+
     }
 
     // Strong reference to the listener.
@@ -148,7 +216,7 @@ public class MapObjectsActivity extends Activity {
         @Override
         public boolean onMapObjectTap(MapObject mapObject, Point point) {
             if (mapObject instanceof CircleMapObject) {
-                CircleMapObject circle = (CircleMapObject)mapObject;
+                CircleMapObject circle = (CircleMapObject) mapObject;
 
                 float randomRadius = 100.0f + 50.0f * new Random().nextFloat();
 
@@ -158,13 +226,10 @@ public class MapObjectsActivity extends Activity {
 
                 Object userData = circle.getUserData();
                 if (userData instanceof CircleMapObjectUserData) {
-                    CircleMapObjectUserData circleUserData = (CircleMapObjectUserData)userData;
+                    CircleMapObjectUserData circleUserData = (CircleMapObjectUserData) userData;
 
-                    Toast toast = Toast.makeText(
-                            getApplicationContext(),
-                            "Circle with id " + circleUserData.id + " and description '"
-                                    + circleUserData.description + "' tapped",
-                            Toast.LENGTH_SHORT);
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "Circle with id " + circleUserData.id + " " + "and description '" + circleUserData.description + "' tapped", Toast.LENGTH_SHORT);
                     toast.show();
                 }
             }
@@ -196,8 +261,9 @@ public class MapObjectsActivity extends Activity {
 
     private void createPlacemarkMapObjectWithViewProvider() {
         final TextView textView = new TextView(this);
-        final int[] colors = new int[] { Color.RED, Color.GREEN, Color.BLACK };
-        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        final int[] colors = new int[]{Color.RED, Color.GREEN, Color.BLACK};
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
         textView.setLayoutParams(params);
 
         textView.setTextColor(Color.RED);
@@ -228,8 +294,7 @@ public class MapObjectsActivity extends Activity {
     }
 
     private void createAnimatedPlacemark() {
-        final AnimatedImageProvider imageProvider =
-                AnimatedImageProvider.fromAsset(this,"animation.png");
+        final AnimatedImageProvider imageProvider = AnimatedImageProvider.fromAsset(this, "animation.png");
 
         mapObjects.addPlacemark(placemark -> {
             placemark.setGeometry(ANIMATED_PLACEMARK_CENTER);

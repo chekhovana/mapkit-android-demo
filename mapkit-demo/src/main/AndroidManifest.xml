@@ -34,9 +34,16 @@
             android:configChanges="orientation|screenSize"
             android:theme="@android:style/Theme.NoTitleBar" />
         <activity
+            android:exported="true"
             android:name=".MapObjectsActivity"
             android:configChanges="orientation|screenSize"
-            android:theme="@android:style/Theme.NoTitleBar" />
+            android:theme="@android:style/Theme.NoTitleBar" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".CustomizationActivity"
             android:configChanges="orientation|screenSize"
