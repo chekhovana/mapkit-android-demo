@@ -142,7 +142,7 @@ public class MapObjectsActivity extends Activity {
     private void createPlacemark() {
         PlacemarkMapObject mark = mapObjects.addPlacemark();
         mark.setGeometry(DRAGGABLE_PLACEMARK_CENTER);
-//        mark.setOpacity(0.1f);
+        mark.setOpacity(0.1f);
         mark.setIcon(ImageProvider.fromResource(this, R.drawable.mark));
         mark.setDraggable(true);
         mark.setZIndex(2);

@@ -14,6 +14,19 @@ buildscript {
 }
 
 apply plugin: "com.android.application"
+android.buildFeatures.buildConfig = true
+
+ext {
+    mapkitApiKey = getMapkitApiKey()
+}
+
+private String getMapkitApiKey() {
+    def properties = new Properties()
+    project.file("local.properties").withInputStream { properties.load(it) }
+    return properties.getProperty("MAPKIT_API_KEY", "")
+}
+
+
 
 android {
     namespace 'com.yandex.mapkitdemo'
@@ -24,12 +37,21 @@ android {
 
     compileSdk 34
 //    buildToolsVersion "34.0.0"
-
     defaultConfig {
         minSdkVersion 26
         targetSdkVersion 34
+        buildConfigField "String", "MAPKIT_API_KEY", "\"${mapkitApiKey}\""
     }
 
+//    defaultConfig {
+//        applicationId "com.yandex.mapkitdemo"
+//        minSdkVersion 31
+//        targetSdk 35
+//        versionCode 1
+//        versionName "1.0"
+//        buildConfigField "String", "MY_KEY", "\"HelloWorld\""
+//
+//    }
     flavorDimensions "versionName"
     productFlavors {
         full {
@@ -54,6 +76,12 @@ android {
 
     buildTypes {
         release {
+            tasks.withType(JavaCompile).configureEach {
+                options.compilerArgs += '-Xlint:all'
+//                options.compilerArgs += '-Werror'
+            }
+        }
+        debug {
             tasks.withType(JavaCompile).configureEach {
                 options.compilerArgs += '-Xlint:all'
 //                options.compilerArgs += '-Werror'
